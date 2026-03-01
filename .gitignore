@@ -1,0 +1,14 @@
+# Node / Next.js
+node_modules/
+.next/
+.env*.local
+
+# Swift / Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+.build/
+*.ipa
+
+# macOS
+.DS_Store
