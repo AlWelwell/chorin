@@ -7,6 +7,7 @@ struct EarningsView: View {
     @State private var completions: [ChoreCompletionWithChore] = []
     @State private var savingsGoals: [SavingsGoal] = []
     @State private var isLoading = false
+    @State private var errorMessage: String?
 
     private var supabase: SupabaseClient { SupabaseManager.shared.client }
 
@@ -54,30 +55,42 @@ struct EarningsView: View {
         ZStack {
             ChorinTheme.background.ignoresSafeArea()
 
-            if isLoading && completions.isEmpty {
-                ProgressView()
-                    .tint(ChorinTheme.textMuted)
-            } else {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Custom header
-                        Text("Earnings")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(ChorinTheme.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(spacing: 0) {
+                if isLoading && completions.isEmpty {
+                    ProgressView()
+                        .tint(ChorinTheme.textMuted)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Custom header
+                            Text("Earnings")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(ChorinTheme.textPrimary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                        heroCard
-                        dailyBreakdownSection
-                        perChoreSection
-                        pastWeeksSection
+                            heroCard
+                            dailyBreakdownSection
+                            perChoreSection
+                            pastWeeksSection
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 16)
+                }
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(ChorinTheme.danger)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
                 }
             }
         }
-        .task { await loadData() }
+        .task(id: appState.session?.user.id) { await loadData() }
+        .task(id: appState.household?.id) { await subscribeRealtime() }
         .refreshable { await loadData() }
     }
 
@@ -301,8 +314,10 @@ struct EarningsView: View {
     // MARK: - Data Loading
 
     private func loadData() async {
-        guard let userId = appState.session?.user.id else { return }
+        guard let userId = appState.session?.user.id,
+              let householdId = appState.household?.id else { return }
         isLoading = true
+        errorMessage = nil
         defer { isLoading = false }
 
         // Fetch completions going back 8 weeks
@@ -321,7 +336,7 @@ struct EarningsView: View {
         async let goalsTask: [SavingsGoal] = supabase
             .from("savings_goals")
             .select()
-            .eq("user_id", value: userId.uuidString)
+            .eq("household_id", value: householdId.uuidString)
             .eq("is_active", value: true)
             .execute()
             .value
@@ -330,7 +345,19 @@ struct EarningsView: View {
             completions = try await completionsTask
             savingsGoals = try await goalsTask
         } catch {
-            print("Error loading earnings data: \(error)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Realtime
+
+    private func subscribeRealtime() async {
+        guard let householdId = appState.household?.id else { return }
+        let channel = supabase.realtimeV2.channel("earnings-\(householdId)")
+        let changes = await channel.postgresChange(AnyAction.self, schema: "public")
+        await channel.subscribe()
+        for await _ in changes {
+            await loadData()
         }
     }
 }

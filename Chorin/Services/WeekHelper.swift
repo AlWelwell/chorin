@@ -1,6 +1,19 @@
 import Foundation
 
 enum WeekHelper {
+    private static var utcCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        return calendar
+    }()
+
+    /// Postgres `date` values decode as midnight UTC. Rebuild them as local date-only values
+    /// before week/day grouping so users outside UTC don't see entries shifted backward.
+    private static func normalizedStoredDate(_ date: Date) -> Date {
+        let components = utcCalendar.dateComponents([.year, .month, .day], from: date)
+        return Calendar.current.date(from: components) ?? date
+    }
+
     /// Returns the start of the current week (Monday at midnight)
     static func startOfCurrentWeek(from date: Date = Date()) -> Date {
         var calendar = Calendar.current
@@ -39,18 +52,18 @@ enum WeekHelper {
     /// Calculates total earnings from an array of completions within a date range
     static func totalEarnings(from completions: [ChoreCompletionWithChore], in range: ClosedRange<Date>) -> Decimal {
         completions
-            .filter { range.contains($0.date) }
+            .filter { range.contains(normalizedStoredDate($0.date)) }
             .reduce(Decimal.zero) { $0 + $1.earnedAmount }
     }
 
     /// Groups completions by day within a date range
     static func earningsByDay(from completions: [ChoreCompletionWithChore], in range: ClosedRange<Date>) -> [(date: Date, total: Decimal)] {
         let calendar = Calendar.current
-        let filtered = completions.filter { range.contains($0.date) }
+        let filtered = completions.filter { range.contains(normalizedStoredDate($0.date)) }
 
         var dayTotals: [Date: Decimal] = [:]
         for completion in filtered {
-            let day = calendar.startOfDay(for: completion.date)
+            let day = calendar.startOfDay(for: normalizedStoredDate(completion.date))
             dayTotals[day, default: Decimal.zero] += completion.earnedAmount
         }
 
@@ -61,7 +74,7 @@ enum WeekHelper {
 
     /// Groups completions by chore name within a date range
     static func earningsByChore(from completions: [ChoreCompletionWithChore], in range: ClosedRange<Date>) -> [(name: String, total: Decimal, count: Int)] {
-        let filtered = completions.filter { range.contains($0.date) }
+        let filtered = completions.filter { range.contains(normalizedStoredDate($0.date)) }
         var groups: [String: (total: Decimal, count: Int)] = [:]
         for c in filtered {
             let key = c.chore.name
