@@ -45,9 +45,19 @@ struct EarningsView: View {
         currentWeekByDay.map(\.total).max() ?? 1
     }
 
-    // MARK: - Dark text for coral gradient
+    // MARK: - Earnings green palette
 
-    private let heroText = Color(hex: "161110")
+    private let earningsGreen = Color(hex: "5BBF8E")
+    private let earningsGreenSoft = Color(hex: "7DD4A8")
+    private let heroText = Color(hex: "0E1A14")
+
+    private var earningsGradient: LinearGradient {
+        LinearGradient(
+            colors: [earningsGreen, earningsGreenSoft],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
     // MARK: - Body
 
@@ -138,7 +148,7 @@ struct EarningsView: View {
             }
         }
         .padding(20)
-        .background(ChorinTheme.primaryGradient)
+        .background(earningsGradient)
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
@@ -194,7 +204,7 @@ struct EarningsView: View {
 
                     if day.total > 0, maxDayEarning > 0 {
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(ChorinTheme.primary)
+                            .fill(earningsGreen)
                             .frame(
                                 width: max(8, geo.size.width * CGFloat(truncating: (day.total / maxDayEarning) as NSDecimalNumber)),
                                 height: 8
@@ -291,7 +301,7 @@ struct EarningsView: View {
 
                             Text(total.formatted(.currency(code: "USD")))
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(total > 0 ? ChorinTheme.primary : ChorinTheme.textMuted)
+                                .foregroundStyle(total > 0 ? earningsGreen : ChorinTheme.textMuted)
 
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold))

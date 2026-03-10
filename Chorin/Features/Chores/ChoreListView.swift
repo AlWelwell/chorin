@@ -35,7 +35,7 @@ struct ChoreListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // MARK: - Top bar
                 Text("Chorin'")
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.system(size: 34, weight: .bold, design: .serif))
                     .italic()
                     .foregroundStyle(ChorinTheme.primary)
                 .padding(.horizontal, 20)

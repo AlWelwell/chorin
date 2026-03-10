@@ -6,17 +6,32 @@ import Supabase
 final class SupabaseManager {
     static let shared = SupabaseManager()
 
-    // TODO: Replace with your Supabase project URL
-    private let supabaseURL = "https://kfacznslshhxrcpxdjdj.supabase.co"
-    // TODO: Replace with your Supabase anon key
-    private let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmYWN6bnNsc2hoeHJjcHhkamRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3Mjk2NzcsImV4cCI6MjA4NzMwNTY3N30.IR5DL6VzH26law9K1P-K0vFJ5GnnkCVz90OjrPREkTs"
-
     let client: SupabaseClient
 
     private init() {
+        let supabaseURL = Self.requireSetting(named: "SUPABASE_URL")
+        let supabaseAnonKey = Self.requireSetting(named: "SUPABASE_ANON_KEY")
+
+        guard let url = URL(string: supabaseURL) else {
+            fatalError("Invalid SUPABASE_URL in Chorin config: \(supabaseURL)")
+        }
+
         client = SupabaseClient(
-            supabaseURL: URL(string: supabaseURL)!,
+            supabaseURL: url,
             supabaseKey: supabaseAnonKey
         )
+    }
+
+    private static func requireSetting(named key: String) -> String {
+        guard
+            let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+            !value.isEmpty,
+            !value.contains("your-project"),
+            value != "your-anon-key"
+        else {
+            fatalError("Missing \(key). Configure Chorin/Config.local.xcconfig before running the app.")
+        }
+
+        return value
     }
 }

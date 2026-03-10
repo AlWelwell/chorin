@@ -9,6 +9,7 @@ xcuserdata/
 DerivedData/
 .build/
 *.ipa
+Chorin/Config.local.xcconfig
 
 # macOS
 .DS_Store

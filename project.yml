@@ -14,18 +14,23 @@ targets:
   Chorin:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Chorin/Config.xcconfig
+      Release: Chorin/Config.xcconfig
     sources:
       - path: Chorin
         excludes:
           - ".old/**"
     settings:
       base:
+        PRODUCT_NAME: $(TARGET_NAME)
         PRODUCT_BUNDLE_IDENTIFIER: com.chorin.app
         SWIFT_VERSION: 5.0
         MARKETING_VERSION: 1.0
         CURRENT_PROJECT_VERSION: 1
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Chorin/App/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - package: Supabase
         product: Supabase

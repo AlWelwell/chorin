@@ -1,16 +1,6 @@
-# Chorin'
+# Chorin
 
-A family chore-tracking app. Kids complete daily chores to earn allowance. Parents manage chores and savings goals. Both roles share household data in real time.
-
-## Monorepo Structure
-
-```
-chorin/
-├── Chorin/          # iOS app (SwiftUI + Supabase)
-└── chorin-web/      # Web app (Next.js + Supabase)
-```
-
-Both apps share the same Supabase backend (Postgres + Auth + Realtime).
+A family chore-tracking app for iOS. Kids complete daily chores to earn allowance, and parents manage chores and savings goals. Household data syncs through Supabase in real time.
 
 ## Features
 
@@ -23,65 +13,48 @@ Both apps share the same Supabase backend (Postgres + Auth + Realtime).
 
 ---
 
-## Web App (`chorin-web`)
-
-Built with Next.js 16 (App Router), Tailwind CSS, and Supabase.
-
-### Setup
-
-1. Install dependencies:
-   ```bash
-   cd chorin-web
-   npm install
-   ```
-
-2. Create `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   ```
-
-3. Run the schema in Supabase SQL Editor (`supabase/schema.sql`), then apply migrations in order from `supabase/migrations/`.
-
-4. Start the dev server:
-   ```bash
-   npm run dev
-   ```
-
----
-
 ## iOS App (`Chorin`)
 
 Built with SwiftUI and Supabase Swift SDK. Requires Xcode on macOS.
 
 ### Setup
 
-1. Clone the repo and open `Chorin/` in Xcode (open the `.xcodeproj`).
+1. Clone the repo and open `Chorin.xcodeproj` in Xcode.
 
-2. Add the Supabase Swift package:
-   - File > Add Package Dependencies
-   - URL: `https://github.com/supabase/supabase-swift`
-   - Add the `Supabase` product to the Chorin target
+2. Let Xcode resolve Swift package dependencies. The project already references `supabase-swift`.
 
-3. Remove the CloudKit capability:
-   - Signing & Capabilities tab → delete the CloudKit entry
-
-4. Add new files to the Xcode project navigator (drag from Finder):
-   - `Utilities/AppState.swift`
-   - `Models/HouseholdMember.swift`, `SavingsGoal.swift`, `SavingsContribution.swift`
-   - `Views/Auth/LoginView.swift`
-   - `Views/SavingsTab/SavingsView.swift`, `GoalFormView.swift`, `ContributeFormView.swift`
-
-5. Fill in your Supabase credentials in `Utilities/CloudKitManager.swift`:
-   ```swift
-   private let supabaseURL = "https://your-project.supabase.co"
-   private let supabaseAnonKey = "your-anon-key"
+3. Create a local Supabase config file:
+   ```bash
+   cp Chorin/Config.local.xcconfig.example Chorin/Config.local.xcconfig
    ```
 
-6. Build and run on Simulator or a device.
+4. Fill in `Chorin/Config.local.xcconfig`:
+   ```xcconfig
+   SUPABASE_URL = https:/$()/your-project.supabase.co
+   SUPABASE_ANON_KEY = your-anon-key
+   ```
+
+5. Build and run on Simulator or a device.
+
+### Project Structure
+
+```
+Chorin/
+├── App/         # App entry point and root navigation
+├── Design/      # Theme and shared UI components
+├── Features/    # Feature screens
+├── Models/      # Codable app models
+└── Services/    # App state, Supabase client, date helpers
+```
+
+### Credentials
+
+The app reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from generated `Info.plist` values that come from `Chorin/Config.xcconfig`, with optional local overrides in `Chorin/Config.local.xcconfig`.
+
+`Chorin/Config.local.xcconfig` is gitignored so each machine can use its own Supabase project without editing tracked source files.
 
 ---
 
 ## Database
 
-See `chorin-web/supabase/schema.sql` for the full schema. Migrations are in `chorin-web/supabase/migrations/` and must be applied in filename order via the Supabase SQL Editor.
+The app expects a Supabase project with Auth, Postgres, and Realtime enabled. If you need to recreate the backend schema, use the schema and migration files from the Supabase project associated with this app.
