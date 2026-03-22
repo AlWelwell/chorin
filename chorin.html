@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chorin'</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Theme tokens (from Theme.swift) ── */
+  :root {
+    --bg:             #161110;
+    --surface:        #231C19;
+    --surface-border: #362B26;
+    --surface-raised: #2D2420;
+    --tertiary:       #3A2A24;
+
+    --primary:        #FF9080;
+    --primary-soft:   #FFAB9E;
+    --primary-pressed:#E87868;
+    --secondary:      #FFC4B5;
+
+    --success:        #9FD4B2;
+    --success-soft:   rgba(159,212,178,0.12);
+    --warning:        #F5D49A;
+    --danger:         #F08080;
+
+    --text-primary:   #F5EAE4;
+    --text-secondary: #BFB0A8;
+    --text-muted:     #7A6C64;
+
+    --earnings-green:      #5BBF8E;
+    --earnings-green-soft: #7DD4A8;
+    --hero-text:           #0E1A14;
+
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius:    16px;
+    --radius-lg: 20px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Tab content area ── */
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 16px;
+  }
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* ── Custom Tab Bar (matches ChorinTabBar.swift) ── */
+  .tab-bar-wrapper {
+    padding: 8px 0;
+    display: flex;
+    justify-content: center;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    padding: 6px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--surface-border);
+  }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 14px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab-btn .tab-icon { font-size: 16px; line-height: 1; }
+  .tab-btn .tab-label { display: none; }
+  .tab-btn.active {
+    color: var(--primary);
+    background: var(--tertiary);
+    padding: 10px 14px;
+  }
+  .tab-btn.active .tab-label { display: inline; }
+
+  /* ── Shared card style ── */
+  .card {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    padding: 14px;
+  }
+
+  /* ── FAB ── */
+  .fab {
+    position: absolute;
+    bottom: 76px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    font-size: 22px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,144,128,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  /* ══════════════════════════════════
+     TAB 1 — CHORES
+     ══════════════════════════════════ */
+  .chores-header {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 52px;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--primary);
+    padding: 8px 14px 16px;
+  }
+  .greeting {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding: 0 20px;
+  }
+  .date-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 4px 20px 16px;
+  }
+  .earned-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--success);
+    background: var(--success-soft);
+    padding: 8px 14px;
+    border-radius: 999px;
+    margin: 0 20px 20px;
+  }
+
+  /* Chore row */
+  .chore-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    margin: 0 20px 10px;
+    transition: opacity 0.2s;
+  }
+  .chore-checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: 1.5px solid var(--surface-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    transition: all 0.2s;
+  }
+  .chore-checkbox.checked {
+    background: var(--success);
+    border-color: var(--success);
+  }
+  .chore-emoji {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tertiary);
+    border-radius: 8px;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .chore-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    flex: 1;
+    transition: all 0.2s;
+  }
+  .chore-name.done {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+  }
+  .chore-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════
+     TAB 2 — EARNINGS
+     ══════════════════════════════════ */
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 8px 20px 0;
+  }
+  .earnings-scroll { padding: 0 20px; }
+  .earnings-scroll > * + * { margin-top: 12px; }
+
+  /* Hero card */
+  .hero-card {
+    background: linear-gradient(135deg, var(--earnings-green), var(--earnings-green-soft));
+    border-radius: 18px;
+    padding: 20px;
+    text-align: center;
+  }
+  .hero-label { font-size: 14px; font-weight: 500; color: rgba(14,26,20,0.7); }
+  .hero-amount { font-size: 36px; font-weight: 700; color: var(--hero-text); margin: 4px 0; }
+  .hero-week { font-size: 12px; color: rgba(14,26,20,0.5); }
+  .hero-divider { height: 1px; background: rgba(14,26,20,0.12); margin: 12px 0; }
+  .hero-footer { display: flex; justify-content: space-between; }
+  .hero-footer-col { text-align: left; }
+  .hero-footer-col:last-child { text-align: right; }
+  .hero-footer-label { font-size: 12px; color: rgba(14,26,20,0.6); }
+  .hero-footer-value { font-size: 16px; font-weight: 600; color: var(--hero-text); margin-top: 2px; }
+
+  /* Section header (uppercase) */
+  .sub-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* Daily row */
+  .daily-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--surface-border);
+  }
+  .daily-day { font-size: 13px; font-weight: 500; color: var(--text-secondary); width: 36px; flex-shrink: 0; }
+  .daily-bar-track { flex: 1; height: 8px; background: var(--surface-border); border-radius: 4px; position: relative; overflow: hidden; }
+  .daily-bar-fill { height: 100%; background: var(--earnings-green); border-radius: 4px; min-width: 0; transition: width 0.3s; }
+  .daily-amount { font-size: 13px; font-weight: 500; width: 60px; text-align: right; flex-shrink: 0; }
+  .daily-amount.zero { color: var(--text-muted); }
+  .daily-amount.pos { color: var(--text-primary); }
+
+  /* Per-chore row */
+  .per-chore-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--surface-border);
+  }
+  .per-chore-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .per-chore-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .per-chore-total { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+
+  /* Past-week row */
+  .past-week-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--surface-border);
+    cursor: pointer;
+  }
+  .past-week-label { font-size: 14px; font-weight: 500; color: var(--text-primary); flex: 1; }
+  .past-week-total { font-size: 14px; font-weight: 600; margin-right: 8px; }
+  .past-week-total.pos { color: var(--earnings-green); }
+  .past-week-total.zero { color: var(--text-muted); }
+  .past-week-chevron { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+  /* ══════════════════════════════════
+     TAB 3 — SAVINGS
+     ══════════════════════════════════ */
+  .savings-header {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 16px 20px 20px;
+  }
+  .goal-row {
+    padding: 14px;
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    margin: 0 20px 10px;
+  }
+  .goal-top { display: flex; align-items: center; gap: 12px; }
+  .goal-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tertiary);
+    border-radius: 10px;
+    font-size: 20px;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+  .goal-info { flex: 1; }
+  .goal-name-row { display: flex; align-items: center; gap: 6px; }
+  .goal-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .goal-check { font-size: 13px; color: var(--success); }
+  .goal-amounts { font-size: 13px; margin-top: 4px; }
+  .goal-saved { color: var(--success); }
+  .goal-target { color: var(--text-muted); }
+  .goal-pct { font-size: 13px; font-weight: 500; color: var(--text-secondary); flex-shrink: 0; }
+  .goal-progress { margin-top: 12px; height: 8px; background: var(--surface-border); border-radius: 4px; overflow: hidden; }
+  .goal-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+  }
+
+  /* ══════════════════════════════════
+     TAB 4 — HOUSEHOLD
+     ══════════════════════════════════ */
+  .household-name {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 8px 20px 0;
+  }
+  .invite-card, .members-card { margin: 0 20px; }
+  .invite-label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+  .invite-code-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .invite-code {
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 4px;
+  }
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--radius-xs);
+    background: rgba(255,144,128,0.12);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .copy-btn.copied { background: rgba(159,212,178,0.12); color: var(--success); }
+  .invite-hint { font-size: 13px; color: var(--text-muted); margin-top: 12px; }
+  .members-label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 14px; }
+  .member-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .member-avatar.parent { background: rgba(255,144,128,0.12); color: var(--primary); }
+  .member-avatar.child  { background: rgba(159,212,178,0.12); color: var(--success); }
+  .member-name { font-size: 15px; font-weight: 500; color: var(--text-primary); flex: 1; }
+  .role-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .role-badge.parent { color: var(--primary); background: rgba(255,144,128,0.12); }
+  .role-badge.child  { color: var(--success); background: rgba(159,212,178,0.12); }
+  .member-divider { height: 1px; background: var(--surface-border); margin: 4px 0; }
+
+  .signout-btn {
+    display: block;
+    width: calc(100% - 40px);
+    margin: 20px auto;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  /* ── Scrollbar ── */
+  .tab-content::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ═══ TAB CONTENT ═══ -->
+  <div class="tab-content">
+
+    <!-- ────── CHORES TAB ────── -->
+    <div class="tab-page active" id="page-chores">
+      <div class="chores-header">Chorin'</div>
+
+      <div class="greeting" id="greeting">Good morning</div>
+      <div class="date-sub" id="today-date"></div>
+
+      <div class="earned-pill" id="earned-pill">$3.50 earned today</div>
+
+      <div id="chore-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- ────── EARNINGS TAB ────── -->
+    <div class="tab-page" id="page-earnings">
+      <div class="section-title" style="margin-bottom:12px;">Earnings</div>
+
+      <div class="earnings-scroll">
+        <!-- Hero -->
+        <div class="hero-card">
+          <div class="hero-label">This week's earnings</div>
+          <div class="hero-amount">$18.50</div>
+          <div class="hero-week" id="week-label"></div>
+          <div class="hero-divider"></div>
+          <div class="hero-footer">
+            <div class="hero-footer-col">
+              <div class="hero-footer-label">To savings</div>
+              <div class="hero-footer-value">$3.70</div>
+            </div>
+            <div class="hero-footer-col">
+              <div class="hero-footer-label">To be paid</div>
+              <div class="hero-footer-value">$14.80</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily breakdown -->
+        <div class="sub-header">DAILY BREAKDOWN</div>
+        <div id="daily-breakdown"></div>
+
+        <!-- Per chore -->
+        <div class="sub-header">PER CHORE</div>
+        <div id="per-chore"></div>
+
+        <!-- Past weeks -->
+        <div class="sub-header">PAST WEEKS</div>
+        <div id="past-weeks"></div>
+      </div>
+    </div>
+
+    <!-- ────── SAVINGS TAB ────── -->
+    <div class="tab-page" id="page-savings">
+      <div class="savings-header">My Savings</div>
+      <div id="savings-list"></div>
+    </div>
+
+    <!-- ────── HOUSEHOLD TAB ────── -->
+    <div class="tab-page" id="page-household">
+      <div class="household-name">The Smiths</div>
+
+      <div style="height:20px;"></div>
+
+      <!-- Invite code card -->
+      <div class="card invite-card">
+        <div class="invite-label">Invite Code</div>
+        <div class="invite-code-row">
+          <span class="invite-code">X7KM2P</span>
+          <button class="copy-btn" id="copy-btn" onclick="copyCode()">
+            <span id="copy-icon">&#128203;</span>
+            <span id="copy-text"></span>
+          </button>
+        </div>
+        <div class="invite-hint">Share this code with family members so they can join your household.</div>
+      </div>
+
+      <div style="height:12px;"></div>
+
+      <!-- Members card -->
+      <div class="card members-card">
+        <div class="members-label">Members</div>
+        <div id="members-list"></div>
+      </div>
+
+      <button class="signout-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- ═══ FAB (visible on Chores & Savings) ═══ -->
+  <button class="fab" id="fab">+</button>
+
+  <!-- ═══ TAB BAR ═══ -->
+  <div class="tab-bar-wrapper">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="chores">
+        <span class="tab-icon">&#9745;</span>
+        <span class="tab-label">Chores</span>
+      </button>
+      <button class="tab-btn" data-tab="earnings">
+        <span class="tab-icon">&#36;</span>
+        <span class="tab-label">Earnings</span>
+      </button>
+      <button class="tab-btn" data-tab="savings">
+        <span class="tab-icon">&#8595;</span>
+        <span class="tab-label">Savings</span>
+      </button>
+      <button class="tab-btn" data-tab="household">
+        <span class="tab-icon">&#127968;</span>
+        <span class="tab-label">Home</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Sample data ──
+const chores = [
+  { icon: "&#x1F6CF;&#xFE0F;", name: "Make bed",           value: 1.00, done: true  },
+  { icon: "&#x1F37D;&#xFE0F;", name: "Load dishwasher",    value: 2.50, done: true  },
+  { icon: "&#x1F5D1;&#xFE0F;", name: "Take out trash",     value: 1.50, done: false },
+  { icon: "&#x1F455;",         name: "Put away laundry",   value: 2.00, done: false },
+  { icon: "&#x1F33F;",         name: "Water plants",       value: 0.50, done: false },
+  { icon: "&#x1F43E;",         name: "Feed the dog",       value: 1.00, done: false },
+  { icon: "&#x1F4DA;",         name: "Tidy bookshelf",     value: 1.50, done: false },
+];
+
+const dailyData = [
+  { day: "Mon", amount: 5.50 },
+  { day: "Tue", amount: 3.00 },
+  { day: "Wed", amount: 4.50 },
+  { day: "Thu", amount: 2.00 },
+  { day: "Fri", amount: 3.50 },
+  { day: "Sat", amount: 0    },
+  { day: "Sun", amount: 0    },
+];
+
+const perChoreData = [
+  { name: "Make bed",        count: 5, total: 5.00  },
+  { name: "Load dishwasher", count: 3, total: 7.50  },
+  { name: "Take out trash",  count: 2, total: 3.00  },
+  { name: "Feed the dog",    count: 3, total: 3.00  },
+];
+
+const pastWeeks = [
+  { label: "Mar 9 – Mar 15",  total: 22.00 },
+  { label: "Mar 2 – Mar 8",   total: 19.50 },
+  { label: "Feb 23 – Mar 1",  total: 15.00 },
+  { label: "Feb 16 – Feb 22", total: 20.50 },
+  { label: "Feb 9 – Feb 15",  total: 0     },
+  { label: "Feb 2 – Feb 8",   total: 18.00 },
+  { label: "Jan 26 – Feb 1",  total: 12.50 },
+];
+
+const savingsGoals = [
+  { icon: "&#x1F3AE;", name: "Nintendo Switch", target: 299.99, saved: 187.40, pct: 62 },
+  { icon: "&#x1F6B2;", name: "New Bike",        target: 150.00, saved: 150.00, pct: 100 },
+  { icon: "&#x2B50;",  name: "Summer Camp",     target: 500.00, saved: 89.20,  pct: 18  },
+];
+
+const members = [
+  { name: "You",    role: "parent", initial: "Y" },
+  { name: "Member", role: "child",  initial: "M" },
+  { name: "Member", role: "child",  initial: "M" },
+];
+
+// ── Greeting & date ──
+const hour = new Date().getHours();
+document.getElementById("greeting").textContent = hour < 12 ? "Good morning" : "Good evening";
+
+const opts = { weekday: "long", month: "long", day: "numeric" };
+document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-US", opts);
+
+// Week label
+const mon = new Date();
+mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+const sun = new Date(mon);
+sun.setDate(sun.getDate() + 6);
+const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+document.getElementById("week-label").textContent = `${fmt(mon)} – ${fmt(sun)}`;
+
+// ── Render chores ──
+function renderChores() {
+  const list = document.getElementById("chore-list");
+  const todayEarned = chores.filter(c => c.done).reduce((s, c) => s + c.value, 0);
+  document.getElementById("earned-pill").textContent = `$${todayEarned.toFixed(2)} earned today`;
+
+  list.innerHTML = chores.map((c, i) => `
+    <div class="chore-row" onclick="toggleChore(${i})">
+      <div class="chore-checkbox ${c.done ? 'checked' : ''}">${c.done ? '&#10003;' : ''}</div>
+      <div class="chore-emoji">${c.icon}</div>
+      <div class="chore-name ${c.done ? 'done' : ''}">${c.name}</div>
+      <div class="chore-value">$${c.value.toFixed(2)}</div>
+    </div>
+  `).join("");
+}
+
+function toggleChore(i) {
+  chores[i].done = !chores[i].done;
+  renderChores();
+}
+
+renderChores();
+
+// ── Render daily breakdown ──
+const maxDay = Math.max(...dailyData.map(d => d.amount), 1);
+document.getElementById("daily-breakdown").innerHTML = dailyData.map(d => `
+  <div class="daily-row" style="margin-top:6px;">
+    <span class="daily-day">${d.day}</span>
+    <div class="daily-bar-track">
+      <div class="daily-bar-fill" style="width:${d.amount > 0 ? Math.max((d.amount / maxDay) * 100, 3) : 0}%"></div>
+    </div>
+    <span class="daily-amount ${d.amount > 0 ? 'pos' : 'zero'}">$${d.amount.toFixed(2)}</span>
+  </div>
+`).join("");
+
+// ── Render per-chore ──
+document.getElementById("per-chore").innerHTML = perChoreData.map(c => `
+  <div class="per-chore-row" style="margin-top:6px;">
+    <div>
+      <div class="per-chore-name">${c.name}</div>
+      <div class="per-chore-count">${c.count} time${c.count === 1 ? '' : 's'}</div>
+    </div>
+    <div class="per-chore-total">$${c.total.toFixed(2)}</div>
+  </div>
+`).join("");
+
+// ── Render past weeks ──
+document.getElementById("past-weeks").innerHTML = pastWeeks.map(w => `
+  <div class="past-week-row" style="margin-top:6px;">
+    <span class="past-week-label">${w.label}</span>
+    <span class="past-week-total ${w.total > 0 ? 'pos' : 'zero'}">$${w.total.toFixed(2)}</span>
+    <span class="past-week-chevron">&#8250;</span>
+  </div>
+`).join("");
+
+// ── Render savings ──
+document.getElementById("savings-list").innerHTML = savingsGoals.map(g => `
+  <div class="goal-row">
+    <div class="goal-top">
+      <div class="goal-icon">${g.icon}</div>
+      <div class="goal-info">
+        <div class="goal-name-row">
+          <span class="goal-name">${g.name}</span>
+          ${g.pct >= 100 ? '<span class="goal-check">&#10004;</span>' : ''}
+        </div>
+        <div class="goal-amounts">
+          <span class="goal-saved">$${g.saved.toFixed(2)}</span>
+          <span class="goal-target"> of $${g.target.toFixed(2)}</span>
+        </div>
+      </div>
+      <span class="goal-pct">${g.pct}%</span>
+    </div>
+    <div class="goal-progress">
+      <div class="goal-progress-fill" style="width:${Math.min(g.pct, 100)}%"></div>
+    </div>
+  </div>
+`).join("");
+
+// ── Render members ──
+document.getElementById("members-list").innerHTML = members.map((m, i) => `
+  <div class="member-row">
+    <div class="member-avatar ${m.role}">${m.initial}</div>
+    <span class="member-name">${m.name}</span>
+    <span class="role-badge ${m.role}">${m.role === 'parent' ? 'Parent' : 'Child'}</span>
+  </div>
+  ${i < members.length - 1 ? '<div class="member-divider"></div>' : ''}
+`).join("");
+
+// ── Tab switching ──
+const tabBtns = document.querySelectorAll(".tab-btn");
+const pages = document.querySelectorAll(".tab-page");
+const fab = document.getElementById("fab");
+
+tabBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    tabBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    pages.forEach(p => p.classList.remove("active"));
+    document.getElementById("page-" + tab).classList.add("active");
+    // Show FAB only on chores & savings
+    fab.style.display = (tab === "chores" || tab === "savings") ? "flex" : "none";
+  });
+});
+
+// ── Copy invite code ──
+function copyCode() {
+  const btn = document.getElementById("copy-btn");
+  const iconEl = document.getElementById("copy-icon");
+  const textEl = document.getElementById("copy-text");
+  navigator.clipboard?.writeText("X7KM2P");
+  btn.classList.add("copied");
+  iconEl.innerHTML = "&#10003;";
+  textEl.textContent = "Copied!";
+  setTimeout(() => {
+    btn.classList.remove("copied");
+    iconEl.innerHTML = "&#128203;";
+    textEl.textContent = "";
+  }, 2000);
+}
+</script>
+
+</body>
+</html>
