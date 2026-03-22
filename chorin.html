@@ -441,9 +441,37 @@
 
   /* ── Scrollbar ── */
   .tab-content::-webkit-scrollbar { width: 0; }
+
+  /* ── Copy HTML button ── */
+  .copy-html-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .copy-html-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
+  .copy-html-btn.copied { color: var(--success); border-color: var(--success); }
 </style>
 </head>
 <body>
+
+<button class="copy-html-btn" id="copy-html-btn" onclick="copyHTML()">
+  <span id="copy-html-icon">&#128203;</span>
+  <span id="copy-html-label">Copy HTML</span>
+</button>
 
 <div class="phone">
 
@@ -748,6 +776,24 @@ function copyCode() {
     btn.classList.remove("copied");
     iconEl.innerHTML = "&#128203;";
     textEl.textContent = "";
+  }, 2000);
+}
+
+// ── Copy full HTML source ──
+function copyHTML() {
+  const src = document.documentElement.outerHTML;
+  const full = "<!DOCTYPE html>\n" + src;
+  navigator.clipboard?.writeText(full);
+  const btn = document.getElementById("copy-html-btn");
+  const icon = document.getElementById("copy-html-icon");
+  const label = document.getElementById("copy-html-label");
+  btn.classList.add("copied");
+  icon.innerHTML = "&#10003;";
+  label.textContent = "Copied!";
+  setTimeout(() => {
+    btn.classList.remove("copied");
+    icon.innerHTML = "&#128203;";
+    label.textContent = "Copy HTML";
   }, 2000);
 }
 </script>
